@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Lean Canvas: Five Elements Water Bottle</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 1rem;
+      font-family: Arial, sans-serif;
+      background-color: #fafafa;
+      color: #333;
+    }
+    .canvas {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: auto repeat(2, minmax(150px, auto)) auto;
+      grid-template-areas:
+        "header  header   header   header   header"
+        "probs   sols     uvp      unfair   cust"
+        "probs   metrics  channels channels cust"
+        "cost    cost     cost     rev      rev";
+      grid-gap: 8px;
+    }
+    .canvas > div {
+      padding: 0.75rem;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      font-size: 0.9rem;
+    }
+    .header {
+      grid-area: header;
+      background: #d1d5db;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    .probs {
+      grid-area: probs;
+      background: #e8b5c2;
+    }
+    .sols {
+      grid-area: sols;
+      background: #a3c4f3;
+    }
+    .uvp {
+      grid-area: uvp;
+      background: #5aa9e0;
+      color: #fff;
+    }
+    .unfair {
+      grid-area: unfair;
+      background: #cba0d4;
+    }
+    .cust {
+      grid-area: cust;
+      background: #f79cbf;
+    }
+    .metrics {
+      grid-area: metrics;
+      background: #e6a3e6;
+    }
+    .channels {
+      grid-area: channels;
+      background: #92cfc1;
+    }
+    .cost {
+      grid-area: cost;
+      background: #f7dc8c;
+    }
+    .rev {
+      grid-area: rev;
+      background: #a3d9a5;
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1rem;
+    }
+    ul {
+      margin: 0.5rem 0;
+      padding-left: 1.2rem;
+    }
+    @media (max-width: 700px) {
+      .canvas {
+        display: block;
+      }
+      .canvas > div {
+        margin-bottom: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="canvas">
+    <div class="header">Lean Canvas: Five Elements Customizable Water Bottle</div>
+
+    <div class="probs">
+      <h2>1. Problems</h2>
+      <ul>
+        <li>Generic bottles lack personalization and cultural meaning</li>
+        <li>Single-material bottles can't adapt to mood/luck cycles</li>
+        <li>Gift buyers struggle to find eco-friendly, meaningful presents</li>
+      </ul>
+      <p><strong>Existing Alternatives:</strong> Standard plastic/steel bottles, one-off engraved bottles, single-material thermoses</p>
+    </div>
+
+    <div class="sols">
+      <h2>4. Solutions</h2>
+      <ul>
+        <li>Universal transparent Tritan™ shell + five element liners</li>
+        <li>Quick-swap inner-liner mechanism</li>
+        <li>Custom engraving/UV printing</li>
+      </ul>
+    </div>
+
+    <div class="uvp">
+      <h2>3. Unique Value Proposition</h2>
+      <p><em>One bottle, five elements: interchangeable eco-material liners + custom engraving.</em></p>
+      <p><strong>“Your mood • Your element • Your bottle.”</strong></p>
+    </div>
+
+    <div class="unfair">
+      <h2>9. Unfair Advantage</h2>
+      <ul>
+        <li>Patent-pending quick-swap mechanism</li>
+        <li>Exclusive five-element design IP</li>
+        <li>Brand narrative rooted in Eastern culture</li>
+        <li>Early adopter personalization community</li>
+      </ul>
+    </div>
+
+    <div class="cust">
+      <h2>2. Customer Segments</h2>
+      <ul>
+        <li>Young professionals (18–35) into design & wellness</li>
+        <li>Gift shoppers seeking eco-friendly, unique items</li>
+        <li>Culture-driven, trend-conscious consumers</li>
+      </ul>
+    </div>
+
+    <div class="metrics">
+      <h2>8. Key Metrics</h2>
+      <ul>
+        <li>Customer Acquisition Cost (CAC)</li>
+        <li>Conversion Rate (visits→purchases)</li>
+        <li>Repeat liner purchase rate</li>
+        <li>Average Order Value (AOV)</li>
+        <li>Time to first liner swap</li>
+        <li>Net Promoter Score (NPS)</li>
+      </ul>
+    </div>
+
+    <div class="channels">
+      <h2>5. Channels</h2>
+      <ul>
+        <li>D2C e-commerce (site, Amazon, Shopify)</li>
+        <li>Social media & influencer campaigns</li>
+        <li>O2O pop-up “Five Elements” booths</li>
+        <li>Design-focused retail partners</li>
+      </ul>
+    </div>
+
+    <div class="cost">
+      <h2>7. Cost Structure</h2>
+      <ul>
+        <li>COGS: shell & liner materials</li>
+        <li>Engraving & UV-printing labor</li>
+        <li>Packaging (eco corrugated + inserts)</li>
+        <li>Marketing & influencer spend</li>
+        <li>Fulfillment, logistics, overhead</li>
+      </ul>
+    </div>
+
+    <div class="rev">
+      <h2>6. Revenue Streams</h2>
+      <ul>
+        <li>One-time bottle sales (Standard & Deluxe)</li>
+        <li>A-la-carte liner sales</li>
+        <li>Customization fees</li>
+        <li>Seasonal/limited-edition pre-orders & subscriptions</li>
+      </ul>
+    </div>
+  </div>
+
+</body>
+</html>
