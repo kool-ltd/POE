@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Lean Canvas: RFID Water Bottle Refill Network</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 1rem;
+      font-family: Arial, sans-serif;
+      background-color: #fafafa;
+      color: #333;
+    }
+    .canvas {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: auto repeat(2, minmax(150px, auto)) auto;
+      grid-template-areas:
+        "header  header   header   header   header"
+        "probs   sols     uvp      unfair   cust"
+        "probs   metrics  channels channels cust"
+        "cost    cost     cost     rev      rev";
+      grid-gap: 8px;
+    }
+    .canvas > div {
+      padding: 0.75rem;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      font-size: 0.9rem;
+    }
+    .header {
+      grid-area: header;
+      background: #d1d5db;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    .probs {
+      grid-area: probs;
+      background: #e8b5c2;
+    }
+    .sols {
+      grid-area: sols;
+      background: #a3c4f3;
+    }
+    .uvp {
+      grid-area: uvp;
+      background: #5aa9e0;
+      color: #fff;
+    }
+    .unfair {
+      grid-area: unfair;
+      background: #cba0d4;
+    }
+    .cust {
+      grid-area: cust;
+      background: #f79cbf;
+    }
+    .metrics {
+      grid-area: metrics;
+      background: #e6a3e6;
+    }
+    .channels {
+      grid-area: channels;
+      background: #92cfc1;
+    }
+    .cost {
+      grid-area: cost;
+      background: #f7dc8c;
+    }
+    .rev {
+      grid-area: rev;
+      background: #a3d9a5;
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1rem;
+    }
+    ul {
+      margin: 0.5rem 0;
+      padding-left: 1.2rem;
+    }
+    @media (max-width: 700px) {
+      .canvas {
+        display: block;
+      }
+      .canvas > div {
+        margin-bottom: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="canvas">
+    <div class="header">Lean Canvas: RFID Water Bottle Refill Network</div>
+
+    <div class="probs">
+      <h2>1. Problems</h2>
+      <ul>
+        <li>Excessive single-use plastic bottle waste</li>
+        <li>No consistent incentives for reusable bottle refills</li>
+        <li>Uneven access to free/discounted drinking water</li>
+      </ul>
+      <p><strong>Existing Alternatives:</strong> Buying bottled water, public fountains (no rewards), ad-hoc coffee shop refills</p>
+    </div>
+
+    <div class="sols">
+      <h2>4. Solutions</h2>
+      <ul>
+        <li>Reusable bottles embedded with passive RFID/NFC</li>
+        <li>Mobile app to locate and “tap-to-refill” at partners</li>
+        <li>Partner portal & API for real-time offer management</li>
+      </ul>
+    </div>
+
+    <div class="uvp">
+      <h2>3. Unique Value Proposition</h2>
+      <p><em>“Tap. Refill. Save.”</em></p>
+      <p>Your smart bottle unlocks free or discounted water & drinks at a network of partner venues—good for you, great for the planet.</p>
+    </div>
+
+    <div class="unfair">
+      <h2>9. Unfair Advantage</h2>
+      <ul>
+        <li>Rapid network effect of participating venues</li>
+        <li>Proprietary tap-event API & POS integrations</li>
+        <li>Exclusive aggregated hydration-habits data</li>
+        <li>First-mover advantage in RFID refill ecosystem</li>
+      </ul>
+    </div>
+
+    <div class="cust">
+      <h2>2. Customer Segments</h2>
+      <ul>
+        <li>Eco-conscious commuters and students</li>
+        <li>Gym-goers, co-workers & office employees</li>
+        <li>Event attendees (concerts, conferences)</li>
+        <li>Cafés, gyms & workplaces seeking green branding</li>
+      </ul>
+    </div>
+
+    <div class="metrics">
+      <h2>8. Key Metrics</h2>
+      <ul>
+        <li>Number of active RFID bottles in market</li>
+        <li>Monthly active “tappers” (refill events)</li>
+        <li>Average refills per bottle per month</li>
+        <li>Partner venue onboarding & retention rate</li>
+        <li>Subscription conversion & churn rates</li>
+      </ul>
+    </div>
+
+    <div class="channels">
+      <h2>5. Channels</h2>
+      <ul>
+        <li>Direct B2B sales to cafés, gyms & offices</li>
+        <li>E-commerce & retail distribution of bottles</li>
+        <li>Referral & influencer marketing to users</li>
+        <li>CSR partnerships with municipalities & NGOs</li>
+      </ul>
+    </div>
+
+    <div class="cost">
+      <h2>7. Cost Structure</h2>
+      <ul>
+        <li>Bottle manufacturing & RFID hardware</li>
+        <li>Cloud backend & mobile app development</li>
+        <li>Marketing, sales & partner integration</li>
+        <li>Customer support & operations</li>
+      </ul>
+    </div>
+
+    <div class="rev">
+      <h2>6. Revenue Streams</h2>
+      <ul>
+        <li>One-time bottle sales (retail & wholesale)</li>
+        <li>Premium subscription for unlimited refills</li>
+        <li>Transaction fees on paid refills & upsells</li>
+        <li>Venue analytics & data-as-a-service subscriptions</li>
+      </ul>
+    </div>
+  </div>
+
+</body>
+</html>
