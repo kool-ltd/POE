@@ -1,0 +1,338 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Sales Dashboard - Last 3 Months</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <style>
+            body { font-family: Arial, sans-serif; background-color: #f8f9fa; }
+            .container { max-width: 1400px; margin: auto; padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+            .chart-container { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 300px; }
+            .section { grid-column: span 1; }
+            .full-width { grid-column: 1 / -1; }
+            table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); table-layout: fixed; }
+            th, td { border: 1px solid #e9ecef; padding: 12px; text-align: left; }
+            th { background-color: #e9ecef; cursor: pointer; position: relative; padding-right: 24px; font-weight: 600; }
+            th:hover { background-color: #dee2e6; }
+            th.sorted { background-color: #ced4da; }
+            th:nth-child(1) { width: 15%; } /* SKU ID */
+            th:nth-child(2) { width: 25%; } /* Product Name */
+            th:nth-child(3) { width: 10%; } /* Brand */
+            th:nth-child(n+4) { width: calc(50% / 8); } /* Remaining columns share equally */
+            td:nth-child(2) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* Clip Product Name */
+            select { margin-bottom: 20px; padding: 8px; border-radius: 4px; border: 1px solid #ced4da; }
+            .sort-indicator { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 14px; }
+            .sort-asc::after { content: '↑'; }
+            .sort-desc::after { content: '↓'; }
+            h1, h2 { color: #343a40; }
+            .filter-container { display: flex; align-items: center; gap: 10px; }
+            @media (max-width: 600px) {
+                .container { grid-template-columns: 1fr; }
+                .chart-container { height: 250px; }
+                th:nth-child(1) { width: 20%; }
+                th:nth-child(2) { width: 30%; }
+                th:nth-child(3) { width: 15%; }
+                th:nth-child(n+4) { width: calc(35% / 8); }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="section full-width">
+                <h1>Sales Dashboard for Last 3 Months</h1>
+                <div class="filter-container">
+                    <label for="monthFilter">Select Month: </label>
+                    <select id="monthFilter">
+                        <option value="all">All Months</option>
+                        <option value="July 2025">July 2025</option><option value="August 2025">August 2025</option><option value="September 2025">September 2025</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Monthly Sales Comparison</h2>
+                <div class="chart-container">
+                    <canvas id="monthlySalesChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Sales by Time Slot</h2>
+                <div class="chart-container">
+                    <canvas id="timeSalesChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Sales by Day of Week</h2>
+                <div class="chart-container">
+                    <canvas id="daySalesChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Shopping Funnel</h2>
+                <div class="chart-container">
+                    <canvas id="funnelChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Customer Distribution</h2>
+                <div class="chart-container">
+                    <canvas id="custChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="section full-width">
+                <h2>Top SKU Performance Comparison (September 2025 vs August 2025)</h2>
+                <table id="skuTable">
+                    <thead>
+                        <tr>
+                            <th><span>SKU ID</span><span class="sort-indicator"></span></th>
+                            <th><span>Product Name</span><span class="sort-indicator"></span></th>
+                            <th><span>Brand</span><span class="sort-indicator"></span></th>
+                            <th><span>Sep Sales (HKD)</span><span class="sort-indicator"></span></th>
+                            <th><span>Aug Sales (HKD)</span><span class="sort-indicator"></span></th>
+                            <th><span>Sales Change (HKD)</span><span class="sort-indicator"></span></th>
+                            <th><span>Sales % Change</span><span class="sort-indicator"></span></th>
+                            <th><span>Sep Qty Sold</span><span class="sort-indicator sorted sort-desc"></span></th>
+                            <th><span>Aug Qty Sold</span><span class="sort-indicator"></span></th>
+                            <th><span>Qty Change</span><span class="sort-indicator"></span></th>
+                            <th><span>Qty % Change</span><span class="sort-indicator"></span></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <script>
+            const dailyData = [{"Date": "2025-07-01", "Sales Amount (HKD)": 845.2, "Average Basket Size (HKD)": 140.9, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 1.27, "Unique Purchases": 1, "Traffic Sessions": 2105, "Month": "July 2025"}, {"Date": "2025-07-02", "Sales Amount (HKD)": 316.8, "Average Basket Size (HKD)": 158.4, "Number of Orders": 6, "Total Customers": 6, "Buy-to-Detail Rate (%)": 6.45, "Unique Purchases": 6, "Traffic Sessions": 1539, "Month": "July 2025"}, {"Date": "2025-07-03", "Sales Amount (HKD)": 913.2, "Average Basket Size (HKD)": 228.3, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 2.34, "Unique Purchases": 3, "Traffic Sessions": 774, "Month": "July 2025"}, {"Date": "2025-07-04", "Sales Amount (HKD)": 0.0, "Average Basket Size (HKD)": 0.0, "Number of Orders": 4, "Total Customers": 4, "Buy-to-Detail Rate (%)": 9.52, "Unique Purchases": 4, "Traffic Sessions": 1653, "Month": "July 2025"}, {"Date": "2025-07-05", "Sales Amount (HKD)": 154.0, "Average Basket Size (HKD)": 77.0, "Number of Orders": 0, "Total Customers": 0, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 663, "Month": "July 2025"}, {"Date": "2025-07-06", "Sales Amount (HKD)": 0.0, "Average Basket Size (HKD)": 0.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 5.0, "Unique Purchases": 2, "Traffic Sessions": 626, "Month": "July 2025"}, {"Date": "2025-07-07", "Sales Amount (HKD)": 0.0, "Average Basket Size (HKD)": 0.0, "Number of Orders": 0, "Total Customers": 0, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 1234, "Month": "July 2025"}, {"Date": "2025-07-08", "Sales Amount (HKD)": 638.8, "Average Basket Size (HKD)": 159.7, "Number of Orders": 0, "Total Customers": 0, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 652, "Month": "July 2025"}, {"Date": "2025-07-09", "Sales Amount (HKD)": 868.0, "Average Basket Size (HKD)": 217.0, "Number of Orders": 4, "Total Customers": 4, "Buy-to-Detail Rate (%)": 10.14, "Unique Purchases": 7, "Traffic Sessions": 632, "Month": "July 2025"}, {"Date": "2025-07-10", "Sales Amount (HKD)": 288.0, "Average Basket Size (HKD)": 288.0, "Number of Orders": 4, "Total Customers": 4, "Buy-to-Detail Rate (%)": 23.33, "Unique Purchases": 7, "Traffic Sessions": 532, "Month": "July 2025"}, {"Date": "2025-07-11", "Sales Amount (HKD)": 216.0, "Average Basket Size (HKD)": 108.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 4.0, "Unique Purchases": 1, "Traffic Sessions": 1351, "Month": "July 2025"}, {"Date": "2025-07-12", "Sales Amount (HKD)": 138.0, "Average Basket Size (HKD)": 138.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 13.64, "Unique Purchases": 3, "Traffic Sessions": 495, "Month": "July 2025"}, {"Date": "2025-07-13", "Sales Amount (HKD)": 158.0, "Average Basket Size (HKD)": 158.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 2.17, "Unique Purchases": 1, "Traffic Sessions": 544, "Month": "July 2025"}, {"Date": "2025-07-14", "Sales Amount (HKD)": 138.0, "Average Basket Size (HKD)": 138.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 3.23, "Unique Purchases": 1, "Traffic Sessions": 958, "Month": "July 2025"}, {"Date": "2025-07-15", "Sales Amount (HKD)": 146.0, "Average Basket Size (HKD)": 73.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 4.55, "Unique Purchases": 2, "Traffic Sessions": 710, "Month": "July 2025"}, {"Date": "2025-07-16", "Sales Amount (HKD)": 98.0, "Average Basket Size (HKD)": 98.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 7.69, "Unique Purchases": 3, "Traffic Sessions": 732, "Month": "July 2025"}, {"Date": "2025-07-17", "Sales Amount (HKD)": 484.0, "Average Basket Size (HKD)": 161.3, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 1.96, "Unique Purchases": 1, "Traffic Sessions": 672, "Month": "July 2025"}, {"Date": "2025-07-18", "Sales Amount (HKD)": 0.0, "Average Basket Size (HKD)": 0.0, "Number of Orders": 3, "Total Customers": 3, "Buy-to-Detail Rate (%)": 8.57, "Unique Purchases": 3, "Traffic Sessions": 2062, "Month": "July 2025"}, {"Date": "2025-07-19", "Sales Amount (HKD)": 0.0, "Average Basket Size (HKD)": 0.0, "Number of Orders": 0, "Total Customers": 0, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 1027, "Month": "July 2025"}, {"Date": "2025-07-20", "Sales Amount (HKD)": 138.0, "Average Basket Size (HKD)": 138.0, "Number of Orders": 0, "Total Customers": 0, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 903, "Month": "July 2025"}, {"Date": "2025-07-21", "Sales Amount (HKD)": 120.0, "Average Basket Size (HKD)": 120.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 2.94, "Unique Purchases": 1, "Traffic Sessions": 2141, "Month": "July 2025"}, {"Date": "2025-07-22", "Sales Amount (HKD)": 392.0, "Average Basket Size (HKD)": 98.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 2.5, "Unique Purchases": 1, "Traffic Sessions": 1359, "Month": "July 2025"}, {"Date": "2025-07-23", "Sales Amount (HKD)": 138.0, "Average Basket Size (HKD)": 138.0, "Number of Orders": 4, "Total Customers": 4, "Buy-to-Detail Rate (%)": 10.81, "Unique Purchases": 4, "Traffic Sessions": 896, "Month": "July 2025"}, {"Date": "2025-07-24", "Sales Amount (HKD)": 512.0, "Average Basket Size (HKD)": 128.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 2.33, "Unique Purchases": 1, "Traffic Sessions": 776, "Month": "July 2025"}, {"Date": "2025-07-25", "Sales Amount (HKD)": 0.0, "Average Basket Size (HKD)": 0.0, "Number of Orders": 4, "Total Customers": 4, "Buy-to-Detail Rate (%)": 6.45, "Unique Purchases": 4, "Traffic Sessions": 2321, "Month": "July 2025"}, {"Date": "2025-07-26", "Sales Amount (HKD)": 138.0, "Average Basket Size (HKD)": 138.0, "Number of Orders": 0, "Total Customers": 0, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 1150, "Month": "July 2025"}, {"Date": "2025-07-27", "Sales Amount (HKD)": 0.0, "Average Basket Size (HKD)": 0.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 1.92, "Unique Purchases": 1, "Traffic Sessions": 773, "Month": "July 2025"}, {"Date": "2025-07-28", "Sales Amount (HKD)": 0.0, "Average Basket Size (HKD)": 0.0, "Number of Orders": 0, "Total Customers": 0, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 2104, "Month": "July 2025"}, {"Date": "2025-07-29", "Sales Amount (HKD)": 515.1, "Average Basket Size (HKD)": 128.8, "Number of Orders": 0, "Total Customers": 0, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 1436, "Month": "July 2025"}, {"Date": "2025-07-30", "Sales Amount (HKD)": 1165.6, "Average Basket Size (HKD)": 233.1, "Number of Orders": 4, "Total Customers": 4, "Buy-to-Detail Rate (%)": 11.11, "Unique Purchases": 5, "Traffic Sessions": 975, "Month": "July 2025"}, {"Date": "2025-08-01", "Sales Amount (HKD)": 138.0, "Average Basket Size (HKD)": 138.0, "Number of Orders": 0, "Total Customers": 0, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 1106, "Month": "August 2025"}, {"Date": "2025-08-02", "Sales Amount (HKD)": 496.0, "Average Basket Size (HKD)": 165.3, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 2.22, "Unique Purchases": 1, "Traffic Sessions": 510, "Month": "August 2025"}, {"Date": "2025-08-03", "Sales Amount (HKD)": 316.0, "Average Basket Size (HKD)": 158.0, "Number of Orders": 3, "Total Customers": 3, "Buy-to-Detail Rate (%)": 4.76, "Unique Purchases": 3, "Traffic Sessions": 516, "Month": "August 2025"}, {"Date": "2025-08-04", "Sales Amount (HKD)": 138.0, "Average Basket Size (HKD)": 138.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 3.57, "Unique Purchases": 2, "Traffic Sessions": 649, "Month": "August 2025"}, {"Date": "2025-08-05", "Sales Amount (HKD)": 1554.0, "Average Basket Size (HKD)": 259.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 1.96, "Unique Purchases": 1, "Traffic Sessions": 657, "Month": "August 2025"}, {"Date": "2025-08-06", "Sales Amount (HKD)": 120.0, "Average Basket Size (HKD)": 120.0, "Number of Orders": 6, "Total Customers": 6, "Buy-to-Detail Rate (%)": 12.28, "Unique Purchases": 7, "Traffic Sessions": 640, "Month": "August 2025"}, {"Date": "2025-08-07", "Sales Amount (HKD)": 138.0, "Average Basket Size (HKD)": 138.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 5.26, "Unique Purchases": 1, "Traffic Sessions": 489, "Month": "August 2025"}, {"Date": "2025-08-08", "Sales Amount (HKD)": 138.0, "Average Basket Size (HKD)": 138.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 1.69, "Unique Purchases": 1, "Traffic Sessions": 567, "Month": "August 2025"}, {"Date": "2025-08-09", "Sales Amount (HKD)": 288.0, "Average Basket Size (HKD)": 288.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 2.5, "Unique Purchases": 1, "Traffic Sessions": 402, "Month": "August 2025"}, {"Date": "2025-08-10", "Sales Amount (HKD)": 426.0, "Average Basket Size (HKD)": 213.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 1.49, "Unique Purchases": 1, "Traffic Sessions": 499, "Month": "August 2025"}, {"Date": "2025-08-11", "Sales Amount (HKD)": 419.1, "Average Basket Size (HKD)": 209.6, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 5.77, "Unique Purchases": 3, "Traffic Sessions": 511, "Month": "August 2025"}, {"Date": "2025-08-12", "Sales Amount (HKD)": 614.0, "Average Basket Size (HKD)": 307.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 8.16, "Unique Purchases": 4, "Traffic Sessions": 592, "Month": "August 2025"}, {"Date": "2025-08-13", "Sales Amount (HKD)": 848.6, "Average Basket Size (HKD)": 212.2, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 10.42, "Unique Purchases": 5, "Traffic Sessions": 602, "Month": "August 2025"}, {"Date": "2025-08-14", "Sales Amount (HKD)": 684.0, "Average Basket Size (HKD)": 171.0, "Number of Orders": 4, "Total Customers": 4, "Buy-to-Detail Rate (%)": 9.3, "Unique Purchases": 4, "Traffic Sessions": 503, "Month": "August 2025"}, {"Date": "2025-08-15", "Sales Amount (HKD)": 316.0, "Average Basket Size (HKD)": 105.3, "Number of Orders": 4, "Total Customers": 4, "Buy-to-Detail Rate (%)": 6.78, "Unique Purchases": 4, "Traffic Sessions": 561, "Month": "August 2025"}, {"Date": "2025-08-16", "Sales Amount (HKD)": 138.0, "Average Basket Size (HKD)": 138.0, "Number of Orders": 3, "Total Customers": 3, "Buy-to-Detail Rate (%)": 11.54, "Unique Purchases": 3, "Traffic Sessions": 394, "Month": "August 2025"}, {"Date": "2025-08-17", "Sales Amount (HKD)": 0.0, "Average Basket Size (HKD)": 0.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 1.69, "Unique Purchases": 1, "Traffic Sessions": 522, "Month": "August 2025"}, {"Date": "2025-08-18", "Sales Amount (HKD)": 564.0, "Average Basket Size (HKD)": 188.0, "Number of Orders": 0, "Total Customers": 0, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 634, "Month": "August 2025"}, {"Date": "2025-08-19", "Sales Amount (HKD)": 1168.0, "Average Basket Size (HKD)": 194.7, "Number of Orders": 3, "Total Customers": 3, "Buy-to-Detail Rate (%)": 5.36, "Unique Purchases": 3, "Traffic Sessions": 661, "Month": "August 2025"}, {"Date": "2025-08-20", "Sales Amount (HKD)": 158.0, "Average Basket Size (HKD)": 158.0, "Number of Orders": 6, "Total Customers": 6, "Buy-to-Detail Rate (%)": 6.85, "Unique Purchases": 5, "Traffic Sessions": 726, "Month": "August 2025"}, {"Date": "2025-08-21", "Sales Amount (HKD)": 138.0, "Average Basket Size (HKD)": 138.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 3.92, "Unique Purchases": 2, "Traffic Sessions": 487, "Month": "August 2025"}, {"Date": "2025-08-22", "Sales Amount (HKD)": 138.0, "Average Basket Size (HKD)": 138.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 0.81, "Unique Purchases": 1, "Traffic Sessions": 596, "Month": "August 2025"}, {"Date": "2025-08-23", "Sales Amount (HKD)": 552.0, "Average Basket Size (HKD)": 276.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 2.7, "Unique Purchases": 1, "Traffic Sessions": 299, "Month": "August 2025"}, {"Date": "2025-08-24", "Sales Amount (HKD)": 888.0, "Average Basket Size (HKD)": 888.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 82, "Month": "August 2025"}, {"Date": "2025-08-25", "Sales Amount (HKD)": 158.0, "Average Basket Size (HKD)": 158.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 3.7, "Unique Purchases": 2, "Traffic Sessions": 453, "Month": "August 2025"}, {"Date": "2025-08-26", "Sales Amount (HKD)": 138.0, "Average Basket Size (HKD)": 138.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 1.49, "Unique Purchases": 1, "Traffic Sessions": 686, "Month": "August 2025"}, {"Date": "2025-08-27", "Sales Amount (HKD)": 366.0, "Average Basket Size (HKD)": 183.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 2.56, "Unique Purchases": 1, "Traffic Sessions": 761, "Month": "August 2025"}, {"Date": "2025-08-28", "Sales Amount (HKD)": 276.0, "Average Basket Size (HKD)": 276.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 8.33, "Unique Purchases": 3, "Traffic Sessions": 599, "Month": "August 2025"}, {"Date": "2025-08-29", "Sales Amount (HKD)": 0.0, "Average Basket Size (HKD)": 0.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 1409, "Month": "August 2025"}, {"Date": "2025-08-30", "Sales Amount (HKD)": 120.0, "Average Basket Size (HKD)": 120.0, "Number of Orders": 0, "Total Customers": 0, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 694, "Month": "August 2025"}, {"Date": "2025-09-01", "Sales Amount (HKD)": 484.0, "Average Basket Size (HKD)": 161.3, "Number of Orders": 3, "Total Customers": 3, "Buy-to-Detail Rate (%)": 5.26, "Unique Purchases": 3, "Traffic Sessions": 1201, "Month": "September 2025"}, {"Date": "2025-09-02", "Sales Amount (HKD)": 158.0, "Average Basket Size (HKD)": 158.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 1.67, "Unique Purchases": 1, "Traffic Sessions": 852, "Month": "September 2025"}, {"Date": "2025-09-03", "Sales Amount (HKD)": 822.0, "Average Basket Size (HKD)": 411.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 8.33, "Unique Purchases": 5, "Traffic Sessions": 783, "Month": "September 2025"}, {"Date": "2025-09-04", "Sales Amount (HKD)": 108.0, "Average Basket Size (HKD)": 108.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 1.16, "Unique Purchases": 1, "Traffic Sessions": 631, "Month": "September 2025"}, {"Date": "2025-09-05", "Sales Amount (HKD)": 276.0, "Average Basket Size (HKD)": 138.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 3.03, "Unique Purchases": 1, "Traffic Sessions": 1226, "Month": "September 2025"}, {"Date": "2025-09-06", "Sales Amount (HKD)": 462.0, "Average Basket Size (HKD)": 115.5, "Number of Orders": 4, "Total Customers": 4, "Buy-to-Detail Rate (%)": 9.09, "Unique Purchases": 5, "Traffic Sessions": 703, "Month": "September 2025"}, {"Date": "2025-09-07", "Sales Amount (HKD)": 296.0, "Average Basket Size (HKD)": 148.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 5.71, "Unique Purchases": 2, "Traffic Sessions": 707, "Month": "September 2025"}, {"Date": "2025-09-08", "Sales Amount (HKD)": 288.0, "Average Basket Size (HKD)": 288.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 1.52, "Unique Purchases": 1, "Traffic Sessions": 1718, "Month": "September 2025"}, {"Date": "2025-09-09", "Sales Amount (HKD)": 85.0, "Average Basket Size (HKD)": 85.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 831, "Month": "September 2025"}, {"Date": "2025-09-10", "Sales Amount (HKD)": 466.0, "Average Basket Size (HKD)": 155.3, "Number of Orders": 3, "Total Customers": 3, "Buy-to-Detail Rate (%)": 4.84, "Unique Purchases": 3, "Traffic Sessions": 833, "Month": "September 2025"}, {"Date": "2025-09-11", "Sales Amount (HKD)": 120.0, "Average Basket Size (HKD)": 120.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 1.92, "Unique Purchases": 1, "Traffic Sessions": 608, "Month": "September 2025"}, {"Date": "2025-09-12", "Sales Amount (HKD)": 278.0, "Average Basket Size (HKD)": 139.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 5.45, "Unique Purchases": 3, "Traffic Sessions": 1513, "Month": "September 2025"}, {"Date": "2025-09-13", "Sales Amount (HKD)": 464.0, "Average Basket Size (HKD)": 232.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 2.67, "Unique Purchases": 2, "Traffic Sessions": 722, "Month": "September 2025"}, {"Date": "2025-09-14", "Sales Amount (HKD)": 58.0, "Average Basket Size (HKD)": 58.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 663, "Month": "September 2025"}, {"Date": "2025-09-15", "Sales Amount (HKD)": 386.0, "Average Basket Size (HKD)": 193.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 3.23, "Unique Purchases": 2, "Traffic Sessions": 1138, "Month": "September 2025"}, {"Date": "2025-09-16", "Sales Amount (HKD)": 366.0, "Average Basket Size (HKD)": 122.0, "Number of Orders": 3, "Total Customers": 3, "Buy-to-Detail Rate (%)": 6.98, "Unique Purchases": 3, "Traffic Sessions": 828, "Month": "September 2025"}, {"Date": "2025-09-17", "Sales Amount (HKD)": 298.0, "Average Basket Size (HKD)": 99.3, "Number of Orders": 3, "Total Customers": 3, "Buy-to-Detail Rate (%)": 7.69, "Unique Purchases": 3, "Traffic Sessions": 835, "Month": "September 2025"}, {"Date": "2025-09-18", "Sales Amount (HKD)": 296.0, "Average Basket Size (HKD)": 148.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 4.0, "Unique Purchases": 2, "Traffic Sessions": 630, "Month": "September 2025"}, {"Date": "2025-09-19", "Sales Amount (HKD)": 98.0, "Average Basket Size (HKD)": 98.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 1.96, "Unique Purchases": 1, "Traffic Sessions": 1317, "Month": "September 2025"}, {"Date": "2025-09-20", "Sales Amount (HKD)": 588.0, "Average Basket Size (HKD)": 147.0, "Number of Orders": 4, "Total Customers": 4, "Buy-to-Detail Rate (%)": 9.26, "Unique Purchases": 5, "Traffic Sessions": 766, "Month": "September 2025"}, {"Date": "2025-09-21", "Sales Amount (HKD)": 228.0, "Average Basket Size (HKD)": 228.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 5.48, "Unique Purchases": 4, "Traffic Sessions": 855, "Month": "September 2025"}, {"Date": "2025-09-22", "Sales Amount (HKD)": 278.0, "Average Basket Size (HKD)": 139.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 4.08, "Unique Purchases": 2, "Traffic Sessions": 913, "Month": "September 2025"}, {"Date": "2025-09-23", "Sales Amount (HKD)": 0.0, "Average Basket Size (HKD)": 0.0, "Number of Orders": 0, "Total Customers": 0, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 724, "Month": "September 2025"}, {"Date": "2025-09-24", "Sales Amount (HKD)": 1560.0, "Average Basket Size (HKD)": 222.9, "Number of Orders": 7, "Total Customers": 7, "Buy-to-Detail Rate (%)": 15.94, "Unique Purchases": 11, "Traffic Sessions": 1033, "Month": "September 2025"}, {"Date": "2025-09-25", "Sales Amount (HKD)": 652.0, "Average Basket Size (HKD)": 163.0, "Number of Orders": 4, "Total Customers": 4, "Buy-to-Detail Rate (%)": 7.55, "Unique Purchases": 4, "Traffic Sessions": 781, "Month": "September 2025"}, {"Date": "2025-09-26", "Sales Amount (HKD)": 374.0, "Average Basket Size (HKD)": 124.7, "Number of Orders": 3, "Total Customers": 3, "Buy-to-Detail Rate (%)": 3.51, "Unique Purchases": 2, "Traffic Sessions": 1509, "Month": "September 2025"}, {"Date": "2025-09-27", "Sales Amount (HKD)": 0.0, "Average Basket Size (HKD)": 0.0, "Number of Orders": 0, "Total Customers": 0, "Buy-to-Detail Rate (%)": 0.0, "Unique Purchases": 0, "Traffic Sessions": 838, "Month": "September 2025"}, {"Date": "2025-09-28", "Sales Amount (HKD)": 296.0, "Average Basket Size (HKD)": 148.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 4.35, "Unique Purchases": 2, "Traffic Sessions": 804, "Month": "September 2025"}, {"Date": "2025-09-29", "Sales Amount (HKD)": 316.0, "Average Basket Size (HKD)": 158.0, "Number of Orders": 2, "Total Customers": 2, "Buy-to-Detail Rate (%)": 2.22, "Unique Purchases": 2, "Traffic Sessions": 1388, "Month": "September 2025"}, {"Date": "2025-09-30", "Sales Amount (HKD)": 158.0, "Average Basket Size (HKD)": 158.0, "Number of Orders": 1, "Total Customers": 1, "Buy-to-Detail Rate (%)": 4.55, "Unique Purchases": 1, "Traffic Sessions": 767, "Month": "September 2025"}];
+            const timeData = [{"Time Slot": "00-09", "Sales Amount (HKD)": 2666.3, "Quantity Sold": 22, "Month": "July 2025"}, {"Time Slot": "09-12", "Sales Amount (HKD)": 1494.8, "Quantity Sold": 12, "Month": "July 2025"}, {"Time Slot": "12-15", "Sales Amount (HKD)": 536.4, "Quantity Sold": 3, "Month": "July 2025"}, {"Time Slot": "15-18", "Sales Amount (HKD)": 896.4, "Quantity Sold": 8, "Month": "July 2025"}, {"Time Slot": "18-21", "Sales Amount (HKD)": 1530.8, "Quantity Sold": 12, "Month": "July 2025"}, {"Time Slot": "21-24", "Sales Amount (HKD)": 1632.0, "Quantity Sold": 11, "Month": "July 2025"}, {"Time Slot": "00-09", "Sales Amount (HKD)": 2174.0, "Quantity Sold": 9, "Month": "August 2025"}, {"Time Slot": "09-12", "Sales Amount (HKD)": 1700.6, "Quantity Sold": 13, "Month": "August 2025"}, {"Time Slot": "12-15", "Sales Amount (HKD)": 1176.0, "Quantity Sold": 9, "Month": "August 2025"}, {"Time Slot": "15-18", "Sales Amount (HKD)": 1110.0, "Quantity Sold": 6, "Month": "August 2025"}, {"Time Slot": "18-21", "Sales Amount (HKD)": 3330.0, "Quantity Sold": 20, "Month": "August 2025"}, {"Time Slot": "21-24", "Sales Amount (HKD)": 1945.1, "Quantity Sold": 11, "Month": "August 2025"}, {"Time Slot": "00-09", "Sales Amount (HKD)": 2902.0, "Quantity Sold": 19, "Month": "September 2025"}, {"Time Slot": "09-12", "Sales Amount (HKD)": 1352.0, "Quantity Sold": 10, "Month": "September 2025"}, {"Time Slot": "12-15", "Sales Amount (HKD)": 2306.0, "Quantity Sold": 14, "Month": "September 2025"}, {"Time Slot": "15-18", "Sales Amount (HKD)": 1033.0, "Quantity Sold": 8, "Month": "September 2025"}, {"Time Slot": "18-21", "Sales Amount (HKD)": 1246.0, "Quantity Sold": 8, "Month": "September 2025"}, {"Time Slot": "21-24", "Sales Amount (HKD)": 1420.0, "Quantity Sold": 11, "Month": "September 2025"}];
+            const dayData = [{"Day of Week": "Monday", "Sales Amount (HKD)": 430.0, "Quantity Sold": 4, "Month": "July 2025"}, {"Day of Week": "Tuesday", "Sales Amount (HKD)": 296.0, "Quantity Sold": 2, "Month": "July 2025"}, {"Day of Week": "Wednesday", "Sales Amount (HKD)": 494.0, "Quantity Sold": 4, "Month": "July 2025"}, {"Day of Week": "Thursday", "Sales Amount (HKD)": 2537.1, "Quantity Sold": 22, "Month": "July 2025"}, {"Day of Week": "Friday", "Sales Amount (HKD)": 2586.4, "Quantity Sold": 19, "Month": "July 2025"}, {"Day of Week": "Saturday", "Sales Amount (HKD)": 2197.2, "Quantity Sold": 15, "Month": "July 2025"}, {"Day of Week": "Sunday", "Sales Amount (HKD)": 216.0, "Quantity Sold": 2, "Month": "July 2025"}, {"Day of Week": "Monday", "Sales Amount (HKD)": 1594.0, "Quantity Sold": 10, "Month": "August 2025"}, {"Day of Week": "Tuesday", "Sales Amount (HKD)": 1630.0, "Quantity Sold": 6, "Month": "August 2025"}, {"Day of Week": "Wednesday", "Sales Amount (HKD)": 1279.1, "Quantity Sold": 7, "Month": "August 2025"}, {"Day of Week": "Thursday", "Sales Amount (HKD)": 3474.0, "Quantity Sold": 18, "Month": "August 2025"}, {"Day of Week": "Friday", "Sales Amount (HKD)": 1492.6, "Quantity Sold": 13, "Month": "August 2025"}, {"Day of Week": "Saturday", "Sales Amount (HKD)": 1236.0, "Quantity Sold": 8, "Month": "August 2025"}, {"Day of Week": "Sunday", "Sales Amount (HKD)": 730.0, "Quantity Sold": 6, "Month": "August 2025"}, {"Day of Week": "Monday", "Sales Amount (HKD)": 878.0, "Quantity Sold": 7, "Month": "September 2025"}, {"Day of Week": "Tuesday", "Sales Amount (HKD)": 1752.0, "Quantity Sold": 10, "Month": "September 2025"}, {"Day of Week": "Wednesday", "Sales Amount (HKD)": 767.0, "Quantity Sold": 6, "Month": "September 2025"}, {"Day of Week": "Thursday", "Sales Amount (HKD)": 3146.0, "Quantity Sold": 18, "Month": "September 2025"}, {"Day of Week": "Friday", "Sales Amount (HKD)": 1176.0, "Quantity Sold": 8, "Month": "September 2025"}, {"Day of Week": "Saturday", "Sales Amount (HKD)": 1026.0, "Quantity Sold": 8, "Month": "September 2025"}, {"Day of Week": "Sunday", "Sales Amount (HKD)": 1514.0, "Quantity Sold": 13, "Month": "September 2025"}];
+            const skuData = [{"SKU ID": "79012", "Product Name": "#1 silicone turner (red)", "Brand": "kool", "Sep Sales (HKD)": 1518.0, "Aug Sales (HKD)": 1242.0, "Sales Change (HKD)": 276.0, "Sales % Change": 22.22, "Sep Qty Sold": 11, "Aug Qty Sold": 9.0, "Qty Change": 2.0, "Qty % Change": 22.22}, {"SKU ID": "40167", "Product Name": "2 pieces knife set", "Brand": "kool", "Sep Sales (HKD)": 1106.0, "Aug Sales (HKD)": 632.0, "Sales Change (HKD)": 474.0, "Sales % Change": 75.0, "Sep Qty Sold": 7, "Aug Qty Sold": 4.0, "Qty Change": 3.0, "Qty % Change": 75.0}, {"SKU ID": "79022", "Product Name": "Silicone Ladle", "Brand": "kool", "Sep Sales (HKD)": 720.0, "Aug Sales (HKD)": 600.0, "Sales Change (HKD)": 120.0, "Sales % Change": 20.0, "Sep Qty Sold": 6, "Aug Qty Sold": 5.0, "Qty Change": 1.0, "Qty % Change": 20.0}, {"SKU ID": "79023", "Product Name": "Adjustable Mandoline Slicer", "Brand": "kool", "Sep Sales (HKD)": 948.0, "Aug Sales (HKD)": 316.0, "Sales Change (HKD)": 632.0, "Sales % Change": 200.0, "Sep Qty Sold": 6, "Aug Qty Sold": 2.0, "Qty Change": 4.0, "Qty % Change": 200.0}, {"SKU ID": "50004", "Product Name": "Inside out Silicone Travit", "Brand": "kool", "Sep Sales (HKD)": 440.0, "Aug Sales (HKD)": 0.0, "Sales Change (HKD)": 440.0, "Sales % Change": 100.0, "Sep Qty Sold": 5, "Aug Qty Sold": 0.0, "Qty Change": 5.0, "Qty % Change": 100.0}, {"SKU ID": "79113", "Product Name": "#1 silicone turner (grey)", "Brand": "kool", "Sep Sales (HKD)": 552.0, "Aug Sales (HKD)": 1518.0, "Sales Change (HKD)": -966.0, "Sales % Change": -63.64, "Sep Qty Sold": 4, "Aug Qty Sold": 11.0, "Qty Change": -7.0, "Qty % Change": -63.64}, {"SKU ID": "40180", "Product Name": "#3 way wood fiber cutting board", "Brand": "kool", "Sep Sales (HKD)": 1152.0, "Aug Sales (HKD)": 2016.0, "Sales Change (HKD)": -864.0, "Sales % Change": -42.86, "Sep Qty Sold": 4, "Aug Qty Sold": 7.0, "Qty Change": -3.0, "Qty % Change": -42.86}, {"SKU ID": "40168", "Product Name": "8\" bread knife", "Brand": "kool", "Sep Sales (HKD)": 432.0, "Aug Sales (HKD)": 0.0, "Sales Change (HKD)": 432.0, "Sales % Change": 100.0, "Sep Qty Sold": 4, "Aug Qty Sold": 0.0, "Qty Change": 4.0, "Qty % Change": 100.0}, {"SKU ID": "50405", "Product Name": "Measuring Spoon & Dripping Funnel", "Brand": "kool", "Sep Sales (HKD)": 294.0, "Aug Sales (HKD)": 79.4, "Sales Change (HKD)": 214.6, "Sales % Change": 270.28, "Sep Qty Sold": 3, "Aug Qty Sold": 2.0, "Qty Change": 1.0, "Qty % Change": 50.0}, {"SKU ID": "79132", "Product Name": "#3 way peeler (grey)", "Brand": "kool", "Sep Sales (HKD)": 174.0, "Aug Sales (HKD)": 116.0, "Sales Change (HKD)": 58.0, "Sales % Change": 50.0, "Sep Qty Sold": 3, "Aug Qty Sold": 2.0, "Qty Change": 1.0, "Qty % Change": 50.0}, {"SKU ID": "79017", "Product Name": "Silicone Spatula", "Brand": "kool", "Sep Sales (HKD)": 360.0, "Aug Sales (HKD)": 600.0, "Sales Change (HKD)": -240.0, "Sales % Change": -40.0, "Sep Qty Sold": 3, "Aug Qty Sold": 5.0, "Qty Change": -2.0, "Qty % Change": -40.0}, {"SKU ID": "79133", "Product Name": "#1 silicone food tongs (red) ", "Brand": "kool", "Sep Sales (HKD)": 414.0, "Aug Sales (HKD)": 414.0, "Sales Change (HKD)": 0.0, "Sales % Change": 0.0, "Sep Qty Sold": 3, "Aug Qty Sold": 3.0, "Qty Change": 0.0, "Qty % Change": 0.0}, {"SKU ID": "40166", "Product Name": "4 pieces knife set", "Brand": "kool", "Sep Sales (HKD)": 576.0, "Aug Sales (HKD)": 1152.0, "Sales Change (HKD)": -576.0, "Sales % Change": -50.0, "Sep Qty Sold": 2, "Aug Qty Sold": 4.0, "Qty Change": -2.0, "Qty % Change": -50.0}, {"SKU ID": "79134", "Product Name": "#1 silicone food tongs (grey) ", "Brand": "kool", "Sep Sales (HKD)": 276.0, "Aug Sales (HKD)": 1228.2, "Sales Change (HKD)": -952.2, "Sales % Change": -77.53, "Sep Qty Sold": 2, "Aug Qty Sold": 9.0, "Qty Change": -7.0, "Qty % Change": -77.78}, {"SKU ID": "79044", "Product Name": "The Fundamentals (set of 8)(Including silicon brush, silicon spatula, silicone ladle, solicone spoon, silicone skimmer, silicone turner, chopstick & jar scraper, Utensil &Knife Holder)", "Brand": "kool", "Sep Sales (HKD)": 1500.0, "Aug Sales (HKD)": 1500.0, "Sales Change (HKD)": 0.0, "Sales % Change": 0.0, "Sep Qty Sold": 2, "Aug Qty Sold": 2.0, "Qty Change": 0.0, "Qty % Change": 0.0}, {"SKU ID": "69145", "Product Name": "#3 hole scissors (grey)", "Brand": "kool", "Sep Sales (HKD)": 196.0, "Aug Sales (HKD)": 98.0, "Sales Change (HKD)": 98.0, "Sales % Change": 100.0, "Sep Qty Sold": 2, "Aug Qty Sold": 1.0, "Qty Change": 1.0, "Qty % Change": 100.0}, {"SKU ID": "40165", "Product Name": "7\" meat chopper cleaver", "Brand": "kool", "Sep Sales (HKD)": 138.0, "Aug Sales (HKD)": 0.0, "Sales Change (HKD)": 138.0, "Sales % Change": 100.0, "Sep Qty Sold": 1, "Aug Qty Sold": 0.0, "Qty Change": 1.0, "Qty % Change": 100.0}, {"SKU ID": "50631", "Product Name": "Adjustable Measuring Spoon", "Brand": "kool", "Sep Sales (HKD)": 68.0, "Aug Sales (HKD)": 61.4, "Sales Change (HKD)": 6.6, "Sales % Change": 10.75, "Sep Qty Sold": 1, "Aug Qty Sold": 2.0, "Qty Change": -1.0, "Qty % Change": -50.0}, {"SKU ID": "50609", "Product Name": "Mega bowl grater blade", "Brand": "kool", "Sep Sales (HKD)": 85.0, "Aug Sales (HKD)": 0.0, "Sales Change (HKD)": 85.0, "Sales % Change": 100.0, "Sep Qty Sold": 1, "Aug Qty Sold": 0.0, "Qty Change": 1.0, "Qty % Change": 100.0}, {"SKU ID": "79019", "Product Name": "Silicone Brush", "Brand": "kool", "Sep Sales (HKD)": 88.0, "Aug Sales (HKD)": 264.0, "Sales Change (HKD)": -176.0, "Sales % Change": -66.67, "Sep Qty Sold": 1, "Aug Qty Sold": 3.0, "Qty Change": -2.0, "Qty % Change": -66.67}, {"SKU ID": "69057", "Product Name": "Steps Measuring Jug", "Brand": "kool", "Sep Sales (HKD)": 98.0, "Aug Sales (HKD)": 97.6, "Sales Change (HKD)": 0.4, "Sales % Change": 0.41, "Sep Qty Sold": 1, "Aug Qty Sold": 2.0, "Qty Change": -1.0, "Qty % Change": -50.0}, {"SKU ID": "69037", "Product Name": "#2 way silicone cooking chopstick (red)", "Brand": "kool", "Sep Sales (HKD)": 120.0, "Aug Sales (HKD)": 0.0, "Sales Change (HKD)": 120.0, "Sales % Change": 100.0, "Sep Qty Sold": 1, "Aug Qty Sold": 0.0, "Qty Change": 1.0, "Qty % Change": 100.0}, {"SKU ID": "79018", "Product Name": "Silicone Whisk", "Brand": "kool", "Sep Sales (HKD)": 88.0, "Aug Sales (HKD)": 108.4, "Sales Change (HKD)": -20.4, "Sales % Change": -18.82, "Sep Qty Sold": 1, "Aug Qty Sold": 2.0, "Qty Change": -1.0, "Qty % Change": -50.0}, {"SKU ID": "69040", "Product Name": "Utensil & Knife Holder", "Brand": "kool", "Sep Sales (HKD)": 168.0, "Aug Sales (HKD)": 168.0, "Sales Change (HKD)": 0.0, "Sales % Change": 0.0, "Sep Qty Sold": 1, "Aug Qty Sold": 1.0, "Qty Change": 0.0, "Qty % Change": 0.0}, {"SKU ID": "79020", "Product Name": "Silicone Skimmer", "Brand": "kool", "Sep Sales (HKD)": 120.0, "Aug Sales (HKD)": 0.0, "Sales Change (HKD)": 120.0, "Sales % Change": 100.0, "Sep Qty Sold": 1, "Aug Qty Sold": 0.0, "Qty Change": 1.0, "Qty % Change": 100.0}];
+            const funnelData = [{"Month": "July 2025", "Stage": "Product Detail Views", "Value": 1489.0, "Percent": 15.7, "AddOn Name": "", "AddOn Value": 0.0}, {"Month": "July 2025", "Stage": "Adds to Cart", "Value": 150.0, "Percent": -23.9, "AddOn Name": "cartToDetail", "AddOn Value": 10.07}, {"Month": "July 2025", "Stage": "Removals from Cart", "Value": 86.0, "Percent": 11.7, "AddOn Name": "", "AddOn Value": 0.0}, {"Month": "July 2025", "Stage": "Unique Purchases", "Value": 69.0, "Percent": -41.0, "AddOn Name": "buyToDetail", "AddOn Value": 4.63}, {"Month": "August 2025", "Stage": "Product Detail Views", "Value": 1536.0, "Percent": 3.2, "AddOn Name": "", "AddOn Value": 0.0}, {"Month": "August 2025", "Stage": "Adds to Cart", "Value": 130.0, "Percent": -13.3, "AddOn Name": "cartToDetail", "AddOn Value": 8.46}, {"Month": "August 2025", "Stage": "Removals from Cart", "Value": 57.0, "Percent": -33.7, "AddOn Name": "", "AddOn Value": 0.0}, {"Month": "August 2025", "Stage": "Unique Purchases", "Value": 62.0, "Percent": -10.1, "AddOn Name": "buyToDetail", "AddOn Value": 4.04}, {"Month": "September 2025", "Stage": "Product Detail Views", "Value": 1649.0, "Percent": 9.4, "AddOn Name": "", "AddOn Value": 0.0}, {"Month": "September 2025", "Stage": "Adds to Cart", "Value": 170.0, "Percent": 31.8, "AddOn Name": "cartToDetail", "AddOn Value": 10.31}, {"Month": "September 2025", "Stage": "Removals from Cart", "Value": 98.0, "Percent": 75.0, "AddOn Name": "", "AddOn Value": 0.0}, {"Month": "September 2025", "Stage": "Unique Purchases", "Value": 72.0, "Percent": 16.1, "AddOn Name": "buyToDetail", "AddOn Value": 4.37}];
+            const custData = [{"Month": "July 2025", "Customer Type": "New", "Count": 49.0}, {"Month": "July 2025", "Customer Type": "Existing", "Count": 8.0}, {"Month": "August 2025", "Customer Type": "New", "Count": 44.0}, {"Month": "August 2025", "Customer Type": "Existing", "Count": 11.0}, {"Month": "September 2025", "Customer Type": "New", "Count": 55.0}, {"Month": "September 2025", "Customer Type": "Existing", "Count": 7.0}];
+            const months = ["July 2025", "August 2025", "September 2025"];
+
+            // Helper function to filter data by month
+            function filterByMonth(data, month) {
+                return month === 'all' ? data : data.filter(d => d.Month === month);
+            }
+
+            // Monthly Sales Comparison (Bar chart)
+            const monthlySales = months.map(month => {
+                const monthData = dailyData.filter(d => d.Month === month);
+                return monthData.reduce((sum, d) => sum + (d['Sales Amount (HKD)'] || 0), 0);
+            });
+            const monthlySalesCtx = document.getElementById('monthlySalesChart').getContext('2d');
+            const monthlySalesChart = new Chart(monthlySalesCtx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Total Sales (HKD)',
+                        data: monthlySales,
+                        backgroundColor: months.map((month, i) => 
+                            month.includes('Jul') ? 'rgba(54, 162, 235, 0.5)' : 
+                            i === 1 ? 'rgba(255, 99, 132, 0.5)' : 
+                            'rgba(75, 192, 192, 0.5)')
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // Sales by Time (Bar chart)
+            const timeCtx = document.getElementById('timeSalesChart').getContext('2d');
+            const timeChart = new Chart(timeCtx, {
+                type: 'bar',
+                data: {
+                    labels: [...new Set(timeData.map(d => d['Time Slot']))],
+                    datasets: months.map((month, i) => ({
+                        label: month,
+                        data: timeData.filter(d => d.Month === month).map(d => d['Sales Amount (HKD)'] || 0),
+                        backgroundColor: month.includes('Jul') ? 'rgba(54, 162, 235, 0.5)' : 
+                                       i === 1 ? 'rgba(255, 99, 132, 0.5)' : 
+                                       'rgba(75, 192, 192, 0.5)'
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // Sales by Day (Bar chart)
+            const dayCtx = document.getElementById('daySalesChart').getContext('2d');
+            const dayChart = new Chart(dayCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                    datasets: months.map((month, i) => ({
+                        label: month,
+                        data: dayData.filter(d => d.Month === month).map(d => d['Sales Amount (HKD)'] || 0),
+                        backgroundColor: month.includes('Jul') ? 'rgba(54, 162, 235, 0.5)' : 
+                                       i === 1 ? 'rgba(255, 99, 132, 0.5)' : 
+                                       'rgba(75, 192, 192, 0.5)'
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // SKU Table (Interactive: sortable with indicators)
+            function updateSkuTable() {
+                const skuTableBody = document.querySelector('#skuTable tbody');
+                skuTableBody.innerHTML = '';
+                skuData.forEach(sku => {
+                    const row = document.createElement('tr');
+                    Object.values(sku).forEach(value => {
+                        const cell = document.createElement('td');
+                        cell.textContent = typeof value === 'number' ? value.toFixed(2) : (value ?? '');
+                        row.appendChild(cell);
+                    });
+                    skuTableBody.appendChild(row);
+                });
+            }
+            updateSkuTable();
+            const skuTable = document.getElementById('skuTable');
+            const headers = skuTable.querySelectorAll('th');
+            let sortDirections = Array(headers.length).fill(true); // true for ascending
+            sortDirections[7] = false; // Initial descending for Latest Qty Sold
+            headers.forEach((header, index) => {
+                const indicator = header.querySelector('.sort-indicator');
+                header.addEventListener('click', () => {
+                    headers.forEach(h => {
+                        h.querySelector('.sort-indicator').className = 'sort-indicator';
+                        h.classList.remove('sorted');
+                    });
+                    indicator.classList.add(sortDirections[index] ? 'sort-asc' : 'sort-desc');
+                    header.classList.add('sorted');
+                    const rows = Array.from(document.querySelector('#skuTable tbody').rows);
+                    const isNumeric = [3,4,5,6,7,8,9,10].includes(index);
+                    rows.sort((a, b) => {
+                        let aValue = a.cells[index].textContent;
+                        let bValue = b.cells[index].textContent;
+                        if (isNumeric) {
+                            aValue = parseFloat(aValue || 0);
+                            bValue = parseFloat(bValue || 0);
+                        }
+                        if (sortDirections[index]) {
+                            return aValue > bValue ? 1 : (aValue < bValue ? -1 : 0);
+                        } else {
+                            return aValue < bValue ? 1 : (aValue > bValue ? -1 : 0);
+                        }
+                    });
+                    sortDirections[index] = !sortDirections[index];
+                    const skuTableBody = document.querySelector('#skuTable tbody');
+                    skuTableBody.innerHTML = '';
+                    rows.forEach(row => skuTableBody.appendChild(row));
+                });
+            });
+            headers[7].classList.add('sorted');
+            headers[7].querySelector('.sort-indicator').classList.add('sort-desc');
+
+            // Funnel Chart
+            const funnelCtx = document.getElementById('funnelChart').getContext('2d');
+            const funnelChart = new Chart(funnelCtx, {
+                type: 'bar',
+                data: {
+                    labels: [...new Set(funnelData.map(d => d.Stage))],
+                    datasets: months.map((month, i) => ({
+                        label: month,
+                        data: funnelData.filter(d => d.Month === month).map(d => d.Value || 0),
+                        backgroundColor: month.includes('Jul') ? 'rgba(54, 162, 235, 0.5)' : 
+                                       i === 1 ? 'rgba(255, 99, 132, 0.5)' : 
+                                       'rgba(75, 192, 192, 0.5)'
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: { x: { beginAtZero: true } }
+                }
+            });
+
+            // Customer Distribution (Doughnut chart)
+            const custCtx = document.getElementById('custChart').getContext('2d');
+            const custChart = new Chart(custCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [...new Set(custData.map(d => d['Customer Type']))],
+                    datasets: months.map((month, i) => ({
+                        label: month,
+                        data: custData.filter(d => d.Month === month).map(d => d.Count || 0),
+                        backgroundColor: month.includes('Jul') ? ['rgba(54, 162, 235, 0.5)', 'rgba(54, 162, 235, 0.3)'] :
+                                       i === 1 ? ['rgba(255, 99, 132, 0.5)', 'rgba(255, 99, 132, 0.3)'] :
+                                       ['rgba(75, 192, 192, 0.5)', 'rgba(75, 192, 192, 0.3)']
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // Month filter
+            document.getElementById('monthFilter').addEventListener('change', (e) => {
+                const selectedMonth = e.target.value;
+                const isAll = selectedMonth === 'all';
+                const activeMonths = isAll ? months : [selectedMonth];
+                document.getElementById('monthlySalesChart').parentNode.style.display = isAll ? 'block' : 'none';
+
+                // Update Time Chart
+                timeChart.data.datasets = activeMonths.map((m, i) => ({
+                    label: m,
+                    data: timeData.filter(d => d.Month === m).map(d => d['Sales Amount (HKD)'] || 0),
+                    backgroundColor: m.includes('Jul') ? 'rgba(54, 162, 235, 0.5)' : 
+                                   i === 1 ? 'rgba(255, 99, 132, 0.5)' : 
+                                   'rgba(75, 192, 192, 0.5)'
+                }));
+                timeChart.update();
+
+                // Update Day Chart
+                dayChart.data.datasets = activeMonths.map((m, i) => ({
+                    label: m,
+                    data: dayData.filter(d => d.Month === m).map(d => d['Sales Amount (HKD)'] || 0),
+                    backgroundColor: m.includes('Jul') ? 'rgba(54, 162, 235, 0.5)' : 
+                                   i === 1 ? 'rgba(255, 99, 132, 0.5)' : 
+                                   'rgba(75, 192, 192, 0.5)'
+                }));
+                dayChart.update();
+
+                // Update Funnel Chart
+                funnelChart.data.datasets = activeMonths.map((m, i) => ({
+                    label: m,
+                    data: funnelData.filter(d => d.Month === m).map(d => d.Value || 0),
+                    backgroundColor: m.includes('Jul') ? 'rgba(54, 162, 235, 0.5)' : 
+                                   i === 1 ? 'rgba(255, 99, 132, 0.5)' : 
+                                   'rgba(75, 192, 192, 0.5)'
+                }));
+                funnelChart.update();
+
+                // Update Customer Chart
+                custChart.data.datasets = activeMonths.map((m, i) => ({
+                    label: m,
+                    data: custData.filter(d => d.Month === m).map(d => d.Count || 0),
+                    backgroundColor: m.includes('Jul') ? ['rgba(54, 162, 235, 0.5)', 'rgba(54, 162, 235, 0.3)'] :
+                                   i === 1 ? ['rgba(255, 99, 132, 0.5)', 'rgba(255, 99, 132, 0.3)'] :
+                                   ['rgba(75, 192, 192, 0.5)', 'rgba(75, 192, 192, 0.3)']
+                }));
+                custChart.update();
+            });
+        </script>
+    </body>
+    </html>
+    
